@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magnetic Wave Visualizer — Permanent vs Electromagnet</title>
+    <meta name="description"
+        content="Visualize electromagnetic wave motion for permanent magnets and electromagnets with color-coded frequencies and wavelengths.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #06070d;
+            --bg-card: rgba(14, 16, 28, 0.85);
+            --border: rgba(120, 130, 200, 0.1);
+            --text: #e8ecf4;
+            --text2: #8a93b0;
+            --text3: #555e7a;
+            --red: #ff4d6d;
+            --blue: #4361ee;
+            --cyan: #00d4aa;
+            --gold: #f7b731;
+            --purple: #9b5de5;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: -50%;
+            width: 200%;
+            height: 200%;
+            background:
+                radial-gradient(ellipse at 30% 30%, rgba(67, 97, 238, 0.10) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 70%, rgba(155, 93, 229, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(255, 77, 109, 0.06) 0%, transparent 40%);
+            z-index: -1;
+            animation: drift 25s ease-in-out infinite alternate;
+        }
+
+        @keyframes drift {
+            0% {
+                transform: translate(0, 0) rotate(0);
+            }
+
+            100% {
+                transform: translate(-1%, 1%) rotate(1deg);
+            }
+        }
+
+        .app {
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 36px 20px 60px;
+        }
+
+        /* ── Header ── */
+        .header {
+            text-align: center;
+            margin-bottom: 36px;
+        }
+
+        .header h1 {
+            font-size: 2.4rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--red), var(--purple), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: var(--text2);
+            font-weight: 300;
+            margin-top: 6px;
+        }
+
+        /* ── Tabs ── */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 28px;
+        }
+
+        .tab-btn {
+            padding: 10px 26px;
+            font-family: inherit;
+            font-size: .88rem;
+            font-weight: 600;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            background: transparent;
+            color: var(--text2);
+            cursor: pointer;
+            transition: .3s;
+        }
+
+        .tab-btn:hover {
+            border-color: rgba(155, 93, 229, .4);
+            color: var(--text);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(67, 97, 238, .15), rgba(155, 93, 229, .15));
+            border-color: var(--purple);
+            color: #fff;
+        }
+
+        /* ── Controls ── */
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 18px;
+            padding: 22px 28px;
+            margin-bottom: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            backdrop-filter: blur(16px);
+        }
+
+        .ctrl-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ctrl-group label {
+            font-size: .82rem;
+            font-weight: 500;
+            color: var(--text2);
+        }
+
+        .ctrl-input {
+            width: 110px;
+            padding: 10px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--cyan);
+            background: rgba(0, 212, 170, .06);
+            border: 2px solid rgba(0, 212, 170, .2);
+            border-radius: 10px;
+            outline: none;
+            transition: .3s;
+        }
+
+        .ctrl-input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 18px rgba(0, 212, 170, .25);
+        }
+
+        .ctrl-unit {
+            font-size: .78rem;
+            font-weight: 600;
+            color: var(--text3);
+            margin-left: -4px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            font-family: inherit;
+            font-size: .85rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            transition: .3s;
+        }
+
+        .btn-go {
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(67, 97, 238, .3);
+        }
+
+        .btn-go:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(67, 97, 238, .4);
+        }
+
+        .btn-stop {
+            background: rgba(255, 77, 109, .12);
+            color: var(--red);
+            border: 2px solid rgba(255, 77, 109, .25);
+        }
+
+        .btn-stop:hover {
+            background: rgba(255, 77, 109, .22);
+        }
+
+        .btn-rst {
+            background: rgba(148, 163, 184, .08);
+            color: var(--text2);
+            border: 2px solid var(--border);
+        }
+
+        .btn-rst:hover {
+            color: var(--text);
+        }
+
+        /* ── Spectrum Bar ── */
+        .spectrum-bar {
+            margin-bottom: 24px;
+            padding: 18px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(16px);
+        }
+
+        .spectrum-label {
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--text3);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 10px;
+        }
+
+        .spectrum-track {
+            height: 18px;
+            border-radius: 10px;
+            position: relative;
+            background: linear-gradient(90deg,
+                    #9400D3, #4B0082, #0000FF, #00FF00, #FFFF00, #FF7F00, #FF0000);
+            box-shadow: 0 0 20px rgba(100, 100, 255, .15);
+        }
+
+        .spectrum-pointer {
+            position: absolute;
+            top: -6px;
+            width: 4px;
+            height: 30px;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 0 10px #fff;
+            transition: left .4s ease;
+        }
+
+        .spectrum-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: .65rem;
+            color: var(--text3);
+            margin-top: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* ── Stats Row ── */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .stat {
+            padding: 16px 20px;
+            text-align: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            backdrop-filter: blur(16px);
+            transition: .3s;
+        }
+
+        .stat:hover {
+            border-color: rgba(67, 97, 238, .3);
+            transform: translateY(-2px);
+        }
+
+        .stat-lbl {
+            font-size: .65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.4px;
+            color: var(--text3);
+            margin-bottom: 6px;
+        }
+
+        .stat-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        /* ── Canvas ── */
+        .canvas-wrap {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            backdrop-filter: blur(16px);
+            margin-bottom: 24px;
+        }
+
+        .canvas-hdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 22px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .canvas-hdr .title {
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--text2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .canvas-hdr .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+            animation: pdot 1.4s ease-in-out infinite;
+        }
+
+        .canvas-hdr .dot.on {
+            background: var(--cyan);
+        }
+
+        @keyframes pdot {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: .35
+            }
+        }
+
+        .legend {
+            display: flex;
+            gap: 14px;
+            font-size: .72rem;
+            color: var(--text3);
+        }
+
+        .legend i {
+            display: inline-block;
+            width: 12px;
+            height: 3px;
+            border-radius: 2px;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 360px;
+        }
+
+        /* ── Magnet Diagrams ── */
+        .magnet-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .magnet-card {
+            padding: 22px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(16px);
+        }
+
+        .magnet-card h3 {
+            font-size: .85rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .magnet-card p {
+            font-size: .82rem;
+            color: var(--text2);
+            line-height: 1.65;
+        }
+
+        .magnet-card canvas {
+            width: 100%;
+            height: 140px;
+            border-radius: 10px;
+            margin-top: 12px;
+            background: rgba(0, 0, 0, .25);
+        }
+
+        .highlight {
+            font-weight: 700;
+        }
+
+        .hl-red {
+            color: var(--red);
+        }
+
+        .hl-blue {
+            color: var(--blue);
+        }
+
+        .hl-cyan {
+            color: var(--cyan);
+        }
+
+        .hl-gold {
+            color: var(--gold);
+        }
+
+        .hl-purple {
+            color: var(--purple);
+        }
+
+        /* ── Info ── */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .info-card {
+            padding: 20px 22px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(16px);
+        }
+
+        .info-card h3 {
+            font-size: .82rem;
+            font-weight: 700;
+            color: var(--purple);
+            margin-bottom: 10px;
+        }
+
+        .info-card p {
+            font-size: .82rem;
+            color: var(--text2);
+            line-height: 1.6;
+        }
+
+        .formula-box {
+            margin-top: 10px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .82rem;
+            color: var(--gold);
+            background: rgba(247, 183, 49, .06);
+            border: 1px solid rgba(247, 183, 49, .12);
+        }
+
+        @media (max-width: 700px) {
+
+            .magnet-row,
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.7rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            canvas {
+                height: 260px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+
+        <!-- Header -->
+        <div class="header">
+            <h1>🧲 Magnetic Wave Visualizer</h1>
+            <p>Permanent Magnet vs Electromagnet — wave motion with color-coded frequency</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-mode="perm" onclick="switchMode('perm',this)">🧱 Permanent
+                Magnet</button>
+            <button class="tab-btn" data-mode="elec" onclick="switchMode('elec',this)">⚡ Electromagnet</button>
+            <button class="tab-btn" data-mode="compare" onclick="switchMode('compare',this)">🔀 Compare Both</button>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls" id="controlsPanel">
+            <div class="ctrl-group">
+                <label>Frequency</label>
+                <input type="number" id="freqInput" class="ctrl-input" value="3" min="0.5" max="30" step="0.5">
+                <span class="ctrl-unit">Hz</span>
+            </div>
+            <div class="ctrl-group" id="electFreqGroup" style="display:none;">
+                <label>Electro Freq</label>
+                <input type="number" id="freqInput2" class="ctrl-input" value="8" min="0.5" max="30" step="0.5">
+                <span class="ctrl-unit">Hz</span>
+            </div>
+            <button class="btn btn-go" onclick="startAnim()">▶ Start</button>
+            <button class="btn btn-stop" onclick="stopAnim()">■ Stop</button>
+            <button class="btn btn-rst" onclick="resetAnim()">↺ Reset</button>
+        </div>
+
+        <!-- Color Spectrum Bar -->
+        <div class="spectrum-bar">
+            <div class="spectrum-label">Electromagnetic Spectrum — color by frequency</div>
+            <div class="spectrum-track">
+                <div class="spectrum-pointer" id="specPointer" style="left:50%;"></div>
+                <div class="spectrum-pointer" id="specPointer2" style="left:50%;display:none;"></div>
+            </div>
+            <div class="spectrum-labels">
+                <span>Violet
+                    380nm</span><span>Blue</span><span>Green</span><span>Yellow</span><span>Orange</span><span>Red
+                    700nm</span>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-lbl">Frequency</div>
+                <div class="stat-val hl-cyan" id="sFreq">3.0 Hz</div>
+            </div>
+            <div class="stat">
+                <div class="stat-lbl">Wavelength (λ)</div>
+                <div class="stat-val hl-purple" id="sWave">—</div>
+            </div>
+            <div class="stat">
+                <div class="stat-lbl">Wave Count</div>
+                <div class="stat-val hl-blue" id="sCount">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-lbl">Wave Color</div>
+                <div class="stat-val" id="sColor" style="font-size:1.1rem;">—</div>
+            </div>
+            <div class="stat">
+                <div class="stat-lbl">Elapsed</div>
+                <div class="stat-val hl-gold" id="sTime">0.00 s</div>
+            </div>
+        </div>
+
+        <!-- Main Wave Canvas -->
+        <div class="canvas-wrap">
+            <div class="canvas-hdr">
+                <div class="title"><span class="dot" id="dot1"></span> <span id="canvasLabel">Permanent Magnet —
+                        Constant Field Wave</span></div>
+                <div class="legend">
+                    <span><i style="background:var(--red)"></i>Crest</span>
+                    <span><i style="background:var(--blue)"></i>Trough</span>
+                    <span><i style="background:var(--cyan)"></i>Equilibrium</span>
+                </div>
+            </div>
+            <canvas id="mainCanvas"></canvas>
+        </div>
+
+        <!-- Magnet Diagrams -->
+        <div class="magnet-row">
+            <div class="magnet-card">
+                <h3>🧱 Permanent Magnet</h3>
+                <p>
+                    Produces a <span class="highlight hl-red">constant magnetic field</span> from aligned atomic
+                    domains.
+                    The wave represents a <span class="highlight hl-cyan">fixed-frequency oscillation</span> of the
+                    field — steady amplitude & wavelength, like a pendulum with no damping.
+                </p>
+                <canvas id="permDiagram"></canvas>
+            </div>
+            <div class="magnet-card">
+                <h3>⚡ Electromagnet</h3>
+                <p>
+                    Generates a <span class="highlight hl-blue">variable magnetic field</span> by passing AC current
+                    through a coil.
+                    The frequency and <span class="highlight hl-gold">intensity can be tuned</span> — higher current =
+                    stronger field, higher AC frequency = faster oscillation.
+                </p>
+                <canvas id="elecDiagram"></canvas>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>📖 How It Works</h3>
+                <p>
+                    <strong>Permanent magnets</strong> have fixed magnetic domains producing a steady field.
+                    <strong>Electromagnets</strong> use electric current — changing frequency/amplitude of the current
+                    changes the wave.
+                    The color of each wave maps to its frequency on the visible spectrum.
+                </p>
+            </div>
+            <div class="info-card">
+                <h3>📐 Key Formulas</h3>
+                <p>Speed of light & electromagnetic waves:</p>
+                <div class="formula-box">c = λ · f &nbsp;|&nbsp; λ = c / f &nbsp;|&nbsp; E = h · f</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── State ───────────────────────────────────────────────────────
+        const C = 3e8; // speed of light m/s
+        let mode = 'perm'; // 'perm' | 'elec' | 'compare'
+        let freq1 = 3, freq2 = 8;
+        let running = false, startT = 0, elapsed = 0, pausedT = 0;
+        let animId = null;
+
+        const mainCanvas = document.getElementById('mainCanvas');
+        const mctx = mainCanvas.getContext('2d');
+        const permCanvas = document.getElementById('permDiagram');
+        const pctx = permCanvas.getContext('2d');
+        const elecCanvas = document.getElementById('elecDiagram');
+        const ectx = elecCanvas.getContext('2d');
+
+        // ─── Color mapping: freq → visible-spectrum color ────────────────
+        function freqToColor(f) {
+            // Map 0.5–30 Hz input range to visible spectrum (just for visual coding)
+            const t = Math.max(0, Math.min(1, (f - 0.5) / 29.5));
+            // Violet → Blue → Cyan → Green → Yellow → Orange → Red
+            const hue = (1 - t) * 270; // 270 = violet, 0 = red
+            return `hsl(${hue}, 90%, 55%)`;
+        }
+
+        function freqToColorName(f) {
+            const t = (f - 0.5) / 29.5;
+            if (t < 0.15) return 'Violet';
+            if (t < 0.28) return 'Blue';
+            if (t < 0.40) return 'Cyan';
+            if (t < 0.55) return 'Green';
+            if (t < 0.70) return 'Yellow';
+            if (t < 0.85) return 'Orange';
+            return 'Red';
+        }
+
+        function freqToWavelength(f) {
+            // Map to a "virtual" visible wavelength for display (380–700 nm)
+            const t = Math.max(0, Math.min(1, (f - 0.5) / 29.5));
+            return Math.round(700 - t * 320); // 700nm (red/low f) → 380nm (violet/high f)
+        }
+
+        function setSpectrumPointer(id, f) {
+            const t = Math.max(0, Math.min(1, (f - 0.5) / 29.5));
+            const el = document.getElementById(id);
+            el.style.left = (t * 100) + '%';
+            el.style.display = 'block';
+        }
+
+        // ─── Resize helper ───────────────────────────────────────────────
+        function fitCanvas(cv) {
+            const dpr = devicePixelRatio || 1;
+            const r = cv.parentElement.getBoundingClientRect();
+            const h = parseInt(getComputedStyle(cv).height);
+            cv.width = r.width * dpr;
+            cv.height = h * dpr;
+            cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+            return { w: r.width, h };
+        }
+
+        function resizeAll() { fitCanvas(mainCanvas); fitCanvas(permCanvas); fitCanvas(elecCanvas); }
+        window.addEventListener('resize', resizeAll);
+        resizeAll();
+
+        // ─── Drawing helpers ─────────────────────────────────────────────
+        function grid(ctx, w, h) {
+            ctx.strokeStyle = 'rgba(130,140,180,.05)'; ctx.lineWidth = 1;
+            for (let x = 0; x <= w; x += w / 16) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+            for (let y = 0; y <= h; y += h / 8) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+        }
+
+        function axis(ctx, w, h) {
+            const m = h / 2;
+            ctx.setLineDash([5, 4]); ctx.strokeStyle = 'rgba(0,212,170,.18)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, m); ctx.lineTo(w, m); ctx.stroke(); ctx.setLineDash([]);
+        }
+
+        function drawWave(ctx, w, h, f, t, color, label, yOff = 0) {
+            const mid = h / 2 + yOff;
+            const amp = (h * 0.32) - Math.abs(yOff) * 0.5;
+            const omega = 2 * Math.PI * f;
+            const cycles = Math.max(2, Math.min(f * 2, 8));
+
+            // Glow
+            ctx.shadowColor = color; ctx.shadowBlur = 16;
+            ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            for (let px = 0; px <= w; px++) {
+                const x = px / w;
+                const phase = omega * t - x * cycles * 2 * Math.PI;
+                const y = mid - amp * Math.sin(phase);
+                px === 0 ? ctx.moveTo(px, y) : ctx.lineTo(px, y);
+            }
+            ctx.stroke(); ctx.shadowBlur = 0;
+
+            // Crest / Trough markers
+            for (let px = 0; px <= w; px += 4) {
+                const x = px / w;
+                const phase = omega * t - x * cycles * 2 * Math.PI;
+                const sv = Math.sin(phase);
+                const y = mid - amp * sv;
+
+                if (sv > 0.993) {
+                    ctx.fillStyle = 'rgba(255,77,109,.85)';
+                    ctx.beginPath(); ctx.arc(px, y, 5, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px, y, 2, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'rgba(255,77,109,.6)'; ctx.font = '600 9px Inter';
+                    ctx.fillText('Crest', px - 12, y - 11);
+                }
+                if (sv < -0.993) {
+                    ctx.fillStyle = 'rgba(67,97,238,.85)';
+                    ctx.beginPath(); ctx.arc(px, y, 5, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(px, y, 2, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'rgba(67,97,238,.6)'; ctx.font = '600 9px Inter';
+                    ctx.fillText('Trough', px - 16, y + 18);
+                }
+            }
+
+            // Label
+            if (label) {
+                ctx.font = '600 11px Inter'; ctx.fillStyle = color;
+                ctx.fillText(label, 12, mid - amp - 10);
+            }
+
+            // Oscillating point
+            const py = mid - amp * Math.sin(omega * t);
+            ctx.fillStyle = color; ctx.globalAlpha = .5;
+            ctx.beginPath(); ctx.arc(4, py, 10, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(4, py, 4, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // ─── Magnet mini diagrams ────────────────────────────────────────
+        function drawPermDiagram(t) {
+            const { w, h } = fitCanvas(permCanvas);
+            pctx.clearRect(0, 0, w, h);
+
+            // Magnet body
+            const mx = w * 0.1, mw = w * 0.25, my = h * 0.25, mh = h * 0.5;
+            // N pole (red)
+            pctx.fillStyle = 'rgba(255,77,109,.7)';
+            pctx.beginPath(); pctx.roundRect(mx, my, mw / 2, mh, 6); pctx.fill();
+            pctx.fillStyle = '#fff'; pctx.font = '700 13px Inter';
+            pctx.fillText('N', mx + mw * 0.12, h / 2 + 5);
+            // S pole (blue)
+            pctx.fillStyle = 'rgba(67,97,238,.7)';
+            pctx.beginPath(); pctx.roundRect(mx + mw / 2, my, mw / 2, mh, 6); pctx.fill();
+            pctx.fillStyle = '#fff';
+            pctx.fillText('S', mx + mw * 0.65, h / 2 + 5);
+
+            // Field lines
+            const nLines = 5;
+            for (let i = 0; i < nLines; i++) {
+                const yy = my + (mh / (nLines + 1)) * (i + 1);
+                const startX = mx + mw + 8;
+                const endX = w - 10;
+                const progress = ((t * 0.5 + i * 0.15) % 1);
+                const alpha = 0.3 + 0.3 * Math.sin(progress * Math.PI);
+
+                pctx.strokeStyle = `rgba(255,77,109,${alpha})`;
+                pctx.lineWidth = 1.5;
+                pctx.setLineDash([4, 6]);
+                pctx.beginPath();
+                pctx.moveTo(startX, yy);
+                // Curved field line
+                const cpx = (startX + endX) / 2;
+                const cpy = yy + (i - nLines / 2) * 12;
+                pctx.quadraticCurveTo(cpx, cpy, endX, h / 2);
+                pctx.stroke();
+                pctx.setLineDash([]);
+
+                // Arrow
+                const ax = startX + (endX - startX) * 0.5;
+                const ay = yy + (cpy - yy) * 0.4;
+                pctx.fillStyle = `rgba(255,77,109,${alpha})`;
+                pctx.beginPath();
+                pctx.moveTo(ax + 5, ay);
+                pctx.lineTo(ax - 3, ay - 4);
+                pctx.lineTo(ax - 3, ay + 4);
+                pctx.fill();
+            }
+
+            pctx.fillStyle = 'rgba(255,255,255,.3)'; pctx.font = '500 9px Inter';
+            pctx.fillText('Constant field lines', mx + mw + 12, h - 10);
+        }
+
+        function drawElecDiagram(t) {
+            const { w, h } = fitCanvas(elecCanvas);
+            ectx.clearRect(0, 0, w, h);
+
+            // Coil
+            const cx = w * 0.15, cw = w * 0.2, cy = h * 0.2, ch = h * 0.6;
+            ectx.strokeStyle = 'rgba(247,183,49,.6)'; ectx.lineWidth = 2;
+            const coils = 6;
+            for (let i = 0; i < coils; i++) {
+                const yy = cy + (ch / coils) * i;
+                const hh = ch / coils;
+                ectx.beginPath();
+                ectx.ellipse(cx + cw / 2, yy + hh / 2, cw / 2, hh / 2.5, 0, 0, Math.PI * 2);
+                ectx.stroke();
+            }
+
+            // Core
+            ectx.fillStyle = 'rgba(100,120,180,.3)';
+            ectx.beginPath(); ectx.roundRect(cx + cw * 0.3, cy - 5, cw * 0.4, ch + 10, 4); ectx.fill();
+            ectx.fillStyle = 'rgba(255,255,255,.5)'; ectx.font = '600 10px Inter';
+            ectx.fillText('Core', cx + cw * 0.32, cy + ch / 2 + 4);
+
+            // Current indicator
+            const pulse = Math.sin(t * freq2 * 0.5) * 0.5 + 0.5;
+            ectx.fillStyle = `rgba(247,183,49,${0.3 + pulse * 0.5})`;
+            ectx.beginPath(); ectx.arc(cx + cw / 2, cy - 14, 6 + pulse * 3, 0, Math.PI * 2); ectx.fill();
+            ectx.fillStyle = '#f7b731'; ectx.font = '700 9px JetBrains Mono';
+            ectx.fillText('AC', cx + cw / 2 + 12, cy - 10);
+
+            // Variable field lines
+            const nLines = 5;
+            for (let i = 0; i < nLines; i++) {
+                const yy = cy + (ch / (nLines + 1)) * (i + 1);
+                const startX = cx + cw + 10;
+                const endX = w - 10;
+                const intensity = 0.3 + 0.5 * (0.5 + 0.5 * Math.sin(t * freq2 * 0.3 + i));
+
+                ectx.strokeStyle = `rgba(67,97,238,${intensity})`;
+                ectx.lineWidth = 1 + intensity;
+                ectx.setLineDash([3, 5]);
+                ectx.beginPath();
+                ectx.moveTo(startX, yy);
+                const cpx = (startX + endX) / 2;
+                const cpy = yy + Math.sin(t * 2 + i) * 10;
+                ectx.quadraticCurveTo(cpx, cpy, endX, h / 2);
+                ectx.stroke();
+                ectx.setLineDash([]);
+            }
+
+            ectx.fillStyle = 'rgba(255,255,255,.3)'; ectx.font = '500 9px Inter';
+            ectx.fillText('Variable field (AC driven)', cx + cw + 12, h - 10);
+        }
+
+        // ─── Stats update ────────────────────────────────────────────────
+        function updateStats(f, t) {
+            document.getElementById('sFreq').textContent = f.toFixed(1) + ' Hz';
+            document.getElementById('sWave').textContent = freqToWavelength(f) + ' nm';
+            const wc = Math.floor(2 * Math.PI * f * t / (2 * Math.PI));
+            document.getElementById('sCount').textContent = wc;
+            document.getElementById('sTime').textContent = t.toFixed(2) + ' s';
+            const cn = freqToColorName(f);
+            const cc = freqToColor(f);
+            document.getElementById('sColor').textContent = cn;
+            document.getElementById('sColor').style.color = cc;
+        }
+
+        // ─── Animation loop ──────────────────────────────────────────────
+        function loop(ts) {
+            if (!running) return;
+            elapsed = (ts - startT) / 1000;
+            const { w, h } = fitCanvas(mainCanvas);
+            mctx.clearRect(0, 0, w, h);
+            grid(mctx, w, h);
+            axis(mctx, w, h);
+
+            if (mode === 'perm') {
+                const c = freqToColor(freq1);
+                drawWave(mctx, w, h, freq1, elapsed, c, `Permanent Magnet  ${freq1} Hz`);
+                setSpectrumPointer('specPointer', freq1);
+                document.getElementById('specPointer2').style.display = 'none';
+                updateStats(freq1, elapsed);
+            } else if (mode === 'elec') {
+                const c = freqToColor(freq2);
+                drawWave(mctx, w, h, freq2, elapsed, c, `Electromagnet  ${freq2} Hz`);
+                setSpectrumPointer('specPointer', freq2);
+                document.getElementById('specPointer2').style.display = 'none';
+                updateStats(freq2, elapsed);
+            } else {
+                // Compare
+                const c1 = freqToColor(freq1);
+                const c2 = freqToColor(freq2);
+                drawWave(mctx, w, h, freq1, elapsed, c1, `Permanent  ${freq1} Hz`, -h * 0.18);
+                drawWave(mctx, w, h, freq2, elapsed, c2, `Electromagnet  ${freq2} Hz`, h * 0.18);
+                setSpectrumPointer('specPointer', freq1);
+                setSpectrumPointer('specPointer2', freq2);
+                updateStats(freq1, elapsed);
+            }
+
+            drawPermDiagram(elapsed);
+            drawElecDiagram(elapsed);
+
+            animId = requestAnimationFrame(loop);
+        }
+
+        function drawStaticAll() {
+            const { w, h } = fitCanvas(mainCanvas);
+            mctx.clearRect(0, 0, w, h);
+            grid(mctx, w, h); axis(mctx, w, h);
+            if (mode === 'perm') drawWave(mctx, w, h, freq1, 0, freqToColor(freq1), 'Permanent Magnet');
+            else if (mode === 'elec') drawWave(mctx, w, h, freq2, 0, freqToColor(freq2), 'Electromagnet');
+            else {
+                drawWave(mctx, w, h, freq1, 0, freqToColor(freq1), 'Permanent', -h * 0.18);
+                drawWave(mctx, w, h, freq2, 0, freqToColor(freq2), 'Electromagnet', h * 0.18);
+            }
+            drawPermDiagram(0);
+            drawElecDiagram(0);
+        }
+
+        // ─── Controls ────────────────────────────────────────────────────
+        function switchMode(m, btn) {
+            mode = m;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const eg = document.getElementById('electFreqGroup');
+            eg.style.display = (m === 'compare') ? 'flex' : 'none';
+
+            const labels = {
+                perm: 'Permanent Magnet — Constant Field Wave',
+                elec: 'Electromagnet — Variable Frequency Wave',
+                compare: 'Side-by-Side Comparison'
+            };
+            document.getElementById('canvasLabel').textContent = labels[m];
+            if (!running) drawStaticAll();
+        }
+
+        function readInputs() {
+            freq1 = parseFloat(document.getElementById('freqInput').value) || 3;
+            freq2 = parseFloat(document.getElementById('freqInput2').value) || 8;
+            freq1 = Math.max(0.5, Math.min(30, freq1));
+            freq2 = Math.max(0.5, Math.min(30, freq2));
+        }
+
+        function startAnim() {
+            readInputs();
+            if (!running) {
+                running = true;
+                startT = performance.now() - pausedT * 1000;
+                document.getElementById('dot1').classList.add('on');
+                animId = requestAnimationFrame(loop);
+            }
+        }
+
+        function stopAnim() {
+            if (running) {
+                running = false; pausedT = elapsed;
+                cancelAnimationFrame(animId);
+                document.getElementById('dot1').classList.remove('on');
+            }
+        }
+
+        function resetAnim() {
+            stopAnim(); elapsed = 0; pausedT = 0;
+            document.getElementById('sCount').textContent = '0';
+            document.getElementById('sTime').textContent = '0.00 s';
+            drawStaticAll();
+        }
+
+        ['freqInput', 'freqInput2'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                readInputs();
+                setSpectrumPointer('specPointer', mode === 'elec' ? freq2 : freq1);
+                if (mode === 'compare') setSpectrumPointer('specPointer2', freq2);
+                if (!running) drawStaticAll();
+            });
+            document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') startAnim(); });
+        });
+
+        // ─── Init ────────────────────────────────────────────────────────
+        setSpectrumPointer('specPointer', freq1);
+        updateStats(freq1, 0);
+        drawStaticAll();
+    </script>
+</body>
+
+</html>

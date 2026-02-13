@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wave Frequency Visualizer</title>
+    <meta name="description" content="Interactive wave frequency visualizer — enter frequency in Hz and watch animated oscillations with crest and trough indicators.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.7);
+            --accent-cyan: #06d6a0;
+            --accent-blue: #118ab2;
+            --accent-purple: #8338ec;
+            --accent-pink: #ef476f;
+            --accent-yellow: #ffd166;
+            --text-primary: #f0f4f8;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(148, 163, 184, 0.1);
+            --glow-cyan: rgba(6, 214, 160, 0.3);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Ambient background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(8, 51, 68, 0.4) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(131, 56, 236, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(6, 214, 160, 0.1) 0%, transparent 50%);
+            z-index: -1;
+            animation: ambientDrift 20s ease-in-out infinite;
+        }
+
+        @keyframes ambientDrift {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(-2%, 1%) rotate(1deg); }
+            66% { transform: translate(1%, -1%) rotate(-0.5deg); }
+        }
+
+        .app-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+            padding: 24px 32px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .freq-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .freq-input {
+            width: 140px;
+            padding: 12px 50px 12px 18px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            background: rgba(6, 214, 160, 0.06);
+            border: 2px solid rgba(6, 214, 160, 0.2);
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .freq-input:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px var(--glow-cyan);
+            background: rgba(6, 214, 160, 0.1);
+        }
+
+        .freq-unit {
+            position: absolute;
+            right: 14px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(6, 214, 160, 0.3);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(6, 214, 160, 0.4);
+        }
+
+        .btn-start:active { transform: translateY(0); }
+
+        .btn-stop {
+            background: rgba(239, 71, 111, 0.15);
+            color: var(--accent-pink);
+            border: 2px solid rgba(239, 71, 111, 0.3);
+        }
+
+        .btn-stop:hover {
+            background: rgba(239, 71, 111, 0.25);
+            border-color: var(--accent-pink);
+        }
+
+        .btn-reset {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+            border: 2px solid var(--border);
+        }
+
+        .btn-reset:hover {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-primary);
+        }
+
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            padding: 20px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(6, 214, 160, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .stat-value.cyan { color: var(--accent-cyan); }
+        .stat-value.blue { color: var(--accent-blue); }
+        .stat-value.purple { color: var(--accent-purple); }
+        .stat-value.yellow { color: var(--accent-yellow); }
+
+        .stat-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Canvas Container */
+        .canvas-container {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            margin-bottom: 32px;
+        }
+
+        .canvas-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .canvas-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .canvas-title .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-pink);
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        .canvas-title .dot.active {
+            background: var(--accent-cyan);
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .canvas-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        canvas#waveCanvas {
+            display: block;
+            width: 100%;
+            height: 380px;
+        }
+
+        /* Info Section */
+        .info-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .info-section { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.8rem; }
+            .controls-panel { flex-direction: column; }
+            canvas#waveCanvas { height: 260px; }
+        }
+
+        .info-card {
+            padding: 20px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+        }
+
+        .info-card h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .formula {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--accent-yellow);
+            background: rgba(255, 209, 102, 0.08);
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            border: 1px solid rgba(255, 209, 102, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Header -->
+    <div class="header">
+        <h1>⚡ Wave Frequency Visualizer</h1>
+        <p>Enter a frequency in Hz and watch the oscillation come to life</p>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-panel">
+        <div class="input-group">
+            <label for="freqInput">Frequency</label>
+            <div class="freq-input-wrapper">
+                <input type="number" id="freqInput" class="freq-input" value="2" min="0.1" max="50" step="0.1" placeholder="e.g. 5">
+                <span class="freq-unit">Hz</span>
+            </div>
+        </div>
+        <button class="btn btn-start" id="btnStart" onclick="startAnimation()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><polygon points="4,2 14,8 4,14"/></svg>
+            Start
+        </button>
+        <button class="btn btn-stop" id="btnStop" onclick="stopAnimation()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="2"/></svg>
+            Stop
+        </button>
+        <button class="btn btn-reset" onclick="resetAnimation()">
+            ↺ Reset
+        </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-label">Frequency</div>
+            <div class="stat-value cyan" id="statFreq">2.0</div>
+            <div class="stat-sub">Hz (cycles/sec)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Wave Count</div>
+            <div class="stat-value blue" id="statCount">0</div>
+            <div class="stat-sub">completed waves</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Time Period</div>
+            <div class="stat-value purple" id="statPeriod">0.500</div>
+            <div class="stat-sub">seconds (T = 1/f)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Elapsed Time</div>
+            <div class="stat-value yellow" id="statTime">0.00</div>
+            <div class="stat-sub">seconds</div>
+        </div>
+    </div>
+
+    <!-- Wave Canvas -->
+    <div class="canvas-container">
+        <div class="canvas-header">
+            <div class="canvas-title">
+                <span class="dot" id="statusDot"></span>
+                <span id="statusText">Ready — enter frequency & press Start</span>
+            </div>
+            <div class="canvas-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #06d6a0;"></div>
+                    Wave
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ef476f;"></div>
+                    Crest
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #8338ec;"></div>
+                    Trough
+                </div>
+            </div>
+        </div>
+        <canvas id="waveCanvas"></canvas>
+    </div>
+
+    <!-- Info -->
+    <div class="info-section">
+        <div class="info-card">
+            <h3>📖 About Waves</h3>
+            <p>
+                A <strong>wave</strong> is a periodic oscillation that transfers energy.
+                The <strong>crest</strong> is the highest point and the <strong>trough</strong> is the lowest point.
+                One complete cycle (crest → trough → crest) = one oscillation.
+            </p>
+        </div>
+        <div class="info-card">
+            <h3>📐 Formula</h3>
+            <p>The relationship between frequency, period, and angular velocity:</p>
+            <div class="formula">y = A · sin(2πf · t)&nbsp;&nbsp;|&nbsp;&nbsp;T = 1/f&nbsp;&nbsp;|&nbsp;&nbsp;ω = 2πf</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // === State ===
+    const canvas = document.getElementById('waveCanvas');
+    const ctx = canvas.getContext('2d');
+    let animationId = null;
+    let isRunning = false;
+    let startTime = 0;
+    let elapsedTime = 0;
+    let pausedTime = 0;
+    let frequency = 2;
+    let waveCount = 0;
+    let lastPhase = 0;
+
+    // === Resize ===
+    function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = 380 * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // === Drawing ===
+    function drawGrid(w, h) {
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+        ctx.lineWidth = 1;
+        const stepX = w / 20;
+        const stepY = h / 10;
+        for (let x = 0; x <= w; x += stepX) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, h);
+            ctx.stroke();
+        }
+        for (let y = 0; y <= h; y += stepY) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+        }
+    }
+
+    function drawAxis(w, h) {
+        const midY = h / 2;
+        // Center line (equilibrium)
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, midY);
+        ctx.lineTo(w, midY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Labels
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.4)';
+        ctx.font = '11px "JetBrains Mono", monospace';
+        ctx.fillText('Equilibrium', 10, midY - 8);
+        ctx.fillText('+A (Crest)', 10, 24);
+        ctx.fillText('−A (Trough)', 10, h - 12);
+    }
+
+    function drawWave(w, h, time) {
+        const midY = h / 2;
+        const amplitude = h * 0.35;
+        const omega = 2 * Math.PI * frequency;
+        const wavelengthPx = w / (frequency * 1.5); // how wide one cycle is on screen
+        const padding = 40;
+
+        // --- Main wave with glow ---
+        // Glow layer
+        ctx.shadowColor = 'rgba(6, 214, 160, 0.5)';
+        ctx.shadowBlur = 18;
+        ctx.strokeStyle = '#06d6a0';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let px = 0; px <= w; px++) {
+            const x = px / w;
+            const phase = omega * time - x * frequency * 2 * Math.PI * 1.5;
+            const y = midY - amplitude * Math.sin(phase);
+            if (px === 0) ctx.moveTo(px, y);
+            else ctx.lineTo(px, y);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // --- Mark crests and troughs ---
+        for (let px = 0; px <= w; px += 3) {
+            const x = px / w;
+            const phase = omega * time - x * frequency * 2 * Math.PI * 1.5;
+            const sinVal = Math.sin(phase);
+            const y = midY - amplitude * sinVal;
+
+            // Crest detection
+            if (sinVal > 0.995) {
+                // Crest marker
+                ctx.fillStyle = 'rgba(239, 71, 111, 0.9)';
+                ctx.beginPath();
+                ctx.arc(px, y, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(px, y, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(239, 71, 111, 0.7)';
+                ctx.font = '600 10px "Inter", sans-serif';
+                ctx.fillText('Crest', px - 14, y - 14);
+            }
+
+            // Trough detection
+            if (sinVal < -0.995) {
+                ctx.fillStyle = 'rgba(131, 56, 236, 0.9)';
+                ctx.beginPath();
+                ctx.arc(px, y, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(px, y, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = 'rgba(131, 56, 236, 0.7)';
+                ctx.font = '600 10px "Inter", sans-serif';
+                ctx.fillText('Trough', px - 18, y + 22);
+            }
+        }
+
+        // --- Moving point on left edge ---
+        const pointPhase = omega * time;
+        const pointY = midY - amplitude * Math.sin(pointPhase);
+        
+        // Glow ring
+        ctx.strokeStyle = 'rgba(255, 209, 102, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, pointY, 12, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Point
+        ctx.fillStyle = '#ffd166';
+        ctx.beginPath();
+        ctx.arc(0, pointY, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Horizontal tracer line
+        ctx.strokeStyle = 'rgba(255, 209, 102, 0.1)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, pointY);
+        ctx.lineTo(w, pointY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // --- Count waves ---
+        const currentPhase = (omega * time) % (2 * Math.PI);
+        // Count full cycles
+        waveCount = Math.floor(omega * time / (2 * Math.PI));
+    }
+
+    function drawParticleTrail(w, h, time) {
+        const midY = h / 2;
+        const amplitude = h * 0.35;
+        const omega = 2 * Math.PI * frequency;
+        const numParticles = 30;
+
+        for (let i = 0; i < numParticles; i++) {
+            const px = (i / numParticles) * w;
+            const x = px / w;
+            const phase = omega * time - x * frequency * 2 * Math.PI * 1.5;
+            const sinVal = Math.sin(phase);
+            const y = midY - amplitude * sinVal;
+
+            const alpha = 0.15 + 0.15 * Math.abs(sinVal);
+            ctx.fillStyle = `rgba(6, 214, 160, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(px, y, 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // === Animation Loop ===
+    function animate(timestamp) {
+        if (!isRunning) return;
+        
+        const w = canvas.width / (window.devicePixelRatio || 1);
+        const h = 380;
+
+        elapsedTime = (timestamp - startTime) / 1000;
+
+        // Clear
+        ctx.clearRect(0, 0, w, h);
+
+        // Draw layers
+        drawGrid(w, h);
+        drawAxis(w, h);
+        drawParticleTrail(w, h, elapsedTime);
+        drawWave(w, h, elapsedTime);
+
+        // Update stats
+        document.getElementById('statCount').textContent = waveCount;
+        document.getElementById('statTime').textContent = elapsedTime.toFixed(2);
+
+        animationId = requestAnimationFrame(animate);
+    }
+
+    function drawStatic() {
+        const w = canvas.width / (window.devicePixelRatio || 1);
+        const h = 380;
+        ctx.clearRect(0, 0, w, h);
+        drawGrid(w, h);
+        drawAxis(w, h);
+        drawWave(w, h, 0);
+    }
+
+    // === Controls ===
+    function startAnimation() {
+        frequency = parseFloat(document.getElementById('freqInput').value) || 2;
+        if (frequency <= 0) frequency = 1;
+        if (frequency > 50) frequency = 50;
+
+        document.getElementById('statFreq').textContent = frequency.toFixed(1);
+        document.getElementById('statPeriod').textContent = (1 / frequency).toFixed(3);
+
+        if (!isRunning) {
+            isRunning = true;
+            startTime = performance.now() - pausedTime * 1000;
+            document.getElementById('statusDot').classList.add('active');
+            document.getElementById('statusText').textContent = `Oscillating at ${frequency} Hz`;
+            animationId = requestAnimationFrame(animate);
+        }
+    }
+
+    function stopAnimation() {
+        if (isRunning) {
+            isRunning = false;
+            pausedTime = elapsedTime;
+            cancelAnimationFrame(animationId);
+            document.getElementById('statusDot').classList.remove('active');
+            document.getElementById('statusText').textContent = `Paused at ${elapsedTime.toFixed(2)}s — ${waveCount} waves completed`;
+        }
+    }
+
+    function resetAnimation() {
+        stopAnimation();
+        elapsedTime = 0;
+        pausedTime = 0;
+        waveCount = 0;
+        lastPhase = 0;
+        document.getElementById('statCount').textContent = '0';
+        document.getElementById('statTime').textContent = '0.00';
+        document.getElementById('statusText').textContent = 'Ready — enter frequency & press Start';
+        drawStatic();
+    }
+
+    // Live update frequency on input change
+    document.getElementById('freqInput').addEventListener('input', function () {
+        const val = parseFloat(this.value);
+        if (val > 0 && val <= 50) {
+            frequency = val;
+            document.getElementById('statFreq').textContent = frequency.toFixed(1);
+            document.getElementById('statPeriod').textContent = (1 / frequency).toFixed(3);
+            if (isRunning) {
+                document.getElementById('statusText').textContent = `Oscillating at ${frequency} Hz`;
+            }
+        }
+    });
+
+    // Keyboard shortcut: Enter to start
+    document.getElementById('freqInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') startAnimation();
+    });
+
+    // Initial draw
+    drawStatic();
+</script>
+
+</body>
+</html>

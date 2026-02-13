@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waves Per Minute Visualizer</title>
+    <meta name="description"
+        content="Interactive wave visualizer — enter frequency in cycles per minute and watch animated oscillations with crest and trough indicators.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #0d0b1a;
+            --bg-secondary: #151227;
+            --bg-card: rgba(21, 18, 39, 0.7);
+            --accent-orange: #ff6b35;
+            --accent-teal: #00c9a7;
+            --accent-blue: #4361ee;
+            --accent-pink: #f72585;
+            --accent-gold: #f4a261;
+            --text-primary: #f0f4f8;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(148, 163, 184, 0.1);
+            --glow-orange: rgba(255, 107, 53, 0.3);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 25% 45%, rgba(255, 107, 53, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 75% 25%, rgba(67, 97, 238, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 85%, rgba(0, 201, 167, 0.1) 0%, transparent 50%);
+            z-index: -1;
+            animation: ambientDrift 20s ease-in-out infinite;
+        }
+
+        @keyframes ambientDrift {
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            33% {
+                transform: translate(-2%, 1%) rotate(1deg);
+            }
+
+            66% {
+                transform: translate(1%, -1%) rotate(-0.5deg);
+            }
+        }
+
+        .app-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 300;
+        }
+
+        .header .badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 14px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-orange);
+            background: rgba(255, 107, 53, 0.1);
+            border: 1px solid rgba(255, 107, 53, 0.25);
+            border-radius: 20px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+            padding: 24px 32px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .freq-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .freq-input {
+            width: 150px;
+            padding: 12px 60px 12px 18px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-orange);
+            background: rgba(255, 107, 53, 0.06);
+            border: 2px solid rgba(255, 107, 53, 0.2);
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .freq-input:focus {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 20px var(--glow-orange);
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        .freq-unit {
+            position: absolute;
+            right: 14px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-pink));
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-start:active {
+            transform: translateY(0);
+        }
+
+        .btn-stop {
+            background: rgba(247, 37, 133, 0.15);
+            color: var(--accent-pink);
+            border: 2px solid rgba(247, 37, 133, 0.3);
+        }
+
+        .btn-stop:hover {
+            background: rgba(247, 37, 133, 0.25);
+            border-color: var(--accent-pink);
+        }
+
+        .btn-reset {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+            border: 2px solid var(--border);
+        }
+
+        .btn-reset:hover {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-primary);
+        }
+
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            padding: 20px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(255, 107, 53, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.7rem;
+            font-weight: 700;
+        }
+
+        .stat-value.orange {
+            color: var(--accent-orange);
+        }
+
+        .stat-value.teal {
+            color: var(--accent-teal);
+        }
+
+        .stat-value.blue {
+            color: var(--accent-blue);
+        }
+
+        .stat-value.gold {
+            color: var(--accent-gold);
+        }
+
+        .stat-value.pink {
+            color: var(--accent-pink);
+        }
+
+        .stat-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Progress Bar (minute timer) */
+        .minute-bar-container {
+            margin-bottom: 32px;
+            padding: 20px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+        }
+
+        .minute-bar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .minute-bar-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .minute-bar-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-gold);
+        }
+
+        .minute-bar-track {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .minute-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-pink));
+            border-radius: 10px;
+            transition: width 0.3s linear;
+            box-shadow: 0 0 12px rgba(255, 107, 53, 0.4);
+        }
+
+        /* Canvas Container */
+        .canvas-container {
+            position: relative;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            margin-bottom: 32px;
+        }
+
+        .canvas-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .canvas-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .canvas-title .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-pink);
+            animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+
+        .canvas-title .dot.active {
+            background: var(--accent-teal);
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        .canvas-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        canvas#waveCanvas {
+            display: block;
+            width: 100%;
+            height: 380px;
+        }
+
+        /* Info Section */
+        .info-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .info-section {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .controls-panel {
+                flex-direction: column;
+            }
+
+            canvas#waveCanvas {
+                height: 260px;
+            }
+        }
+
+        .info-card {
+            padding: 20px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+        }
+
+        .info-card h3 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent-orange);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .formula {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-gold);
+            background: rgba(244, 162, 97, 0.08);
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            border: 1px solid rgba(244, 162, 97, 0.15);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔄 Waves Per Minute Visualizer</h1>
+            <p>Enter frequency in cycles per minute and watch oscillations unfold</p>
+            <span class="badge">Per Minute Mode</span>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-panel">
+            <div class="input-group">
+                <label for="freqInput">Frequency</label>
+                <div class="freq-input-wrapper">
+                    <input type="number" id="freqInput" class="freq-input" value="30" min="1" max="600" step="1"
+                        placeholder="e.g. 60">
+                    <span class="freq-unit">CPM</span>
+                </div>
+            </div>
+            <button class="btn btn-start" id="btnStart" onclick="startAnimation()">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <polygon points="4,2 14,8 4,14" />
+                </svg>
+                Start
+            </button>
+            <button class="btn btn-stop" id="btnStop" onclick="stopAnimation()">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <rect x="3" y="3" width="10" height="10" rx="2" />
+                </svg>
+                Stop
+            </button>
+            <button class="btn btn-reset" onclick="resetAnimation()">
+                ↺ Reset
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-label">Frequency</div>
+                <div class="stat-value orange" id="statFreqCPM">30</div>
+                <div class="stat-sub">cycles / minute</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Freq in Hz</div>
+                <div class="stat-value teal" id="statFreqHz">0.500</div>
+                <div class="stat-sub">cycles / second</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Wave Count</div>
+                <div class="stat-value blue" id="statCount">0</div>
+                <div class="stat-sub">completed waves</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Time Period</div>
+                <div class="stat-value gold" id="statPeriod">2.000</div>
+                <div class="stat-sub">seconds per wave</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Elapsed</div>
+                <div class="stat-value pink" id="statTime">0.00</div>
+                <div class="stat-sub">seconds</div>
+            </div>
+        </div>
+
+        <!-- Minute Progress Bar -->
+        <div class="minute-bar-container">
+            <div class="minute-bar-header">
+                <span class="minute-bar-label">⏱ Minute Progress — waves expected: <strong
+                        id="expectedWaves">30</strong></span>
+                <span class="minute-bar-time" id="minuteTimer">0:00 / 1:00</span>
+            </div>
+            <div class="minute-bar-track">
+                <div class="minute-bar-fill" id="minuteBarFill"></div>
+            </div>
+        </div>
+
+        <!-- Wave Canvas -->
+        <div class="canvas-container">
+            <div class="canvas-header">
+                <div class="canvas-title">
+                    <span class="dot" id="statusDot"></span>
+                    <span id="statusText">Ready — enter CPM & press Start</span>
+                </div>
+                <div class="canvas-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b35;"></div>
+                        Wave
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f72585;"></div>
+                        Crest
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4361ee;"></div>
+                        Trough
+                    </div>
+                </div>
+            </div>
+            <canvas id="waveCanvas"></canvas>
+        </div>
+
+        <!-- Info -->
+        <div class="info-section">
+            <div class="info-card">
+                <h3>📖 CPM vs Hz</h3>
+                <p>
+                    <strong>CPM</strong> (Cycles Per Minute) measures how many complete waves occur in one minute.
+                    To convert: <strong>Hz = CPM / 60</strong>. For example, 60 CPM = 1 Hz (one wave per second).
+                    Common uses: heart rate (BPM), engine RPM, pendulum swings.
+                </p>
+            </div>
+            <div class="info-card">
+                <h3>📐 Formulas</h3>
+                <p>Conversion and wave equations:</p>
+                <div class="formula">f(Hz) = CPM / 60&nbsp;&nbsp;|&nbsp;&nbsp;T = 60 / CPM&nbsp;&nbsp;|&nbsp;&nbsp;y =
+                    A·sin(2π·f·t)</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === State ===
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        let animationId = null;
+        let isRunning = false;
+        let startTime = 0;
+        let elapsedTime = 0;
+        let pausedTime = 0;
+        let cpm = 30;          // cycles per minute
+        let freqHz = 0.5;      // Hz
+        let waveCount = 0;
+
+        // === Resize ===
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = 380 * dpr;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // === Drawing ===
+        function drawGrid(w, h) {
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.06)';
+            ctx.lineWidth = 1;
+            const stepX = w / 20;
+            const stepY = h / 10;
+            for (let x = 0; x <= w; x += stepX) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+            }
+            for (let y = 0; y <= h; y += stepY) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+        }
+
+        function drawAxis(w, h) {
+            const midY = h / 2;
+            ctx.setLineDash([6, 4]);
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, midY); ctx.lineTo(w, midY); ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.4)';
+            ctx.font = '11px "JetBrains Mono", monospace';
+            ctx.fillText('Equilibrium', 10, midY - 8);
+            ctx.fillText('+A (Crest)', 10, 24);
+            ctx.fillText('−A (Trough)', 10, h - 12);
+        }
+
+        function drawWave(w, h, time) {
+            const midY = h / 2;
+            const amplitude = h * 0.35;
+            const omega = 2 * Math.PI * freqHz;
+
+            // Determine how many visible cycles to show on screen
+            // Show at least 2 cycles, scale with frequency
+            const visibleCycles = Math.max(2, Math.min(freqHz * 3, 8));
+
+            // --- Main wave with glow ---
+            ctx.shadowColor = 'rgba(255, 107, 53, 0.5)';
+            ctx.shadowBlur = 18;
+            ctx.strokeStyle = '#ff6b35';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            for (let px = 0; px <= w; px++) {
+                const x = px / w;
+                const phase = omega * time - x * visibleCycles * 2 * Math.PI;
+                const y = midY - amplitude * Math.sin(phase);
+                if (px === 0) ctx.moveTo(px, y);
+                else ctx.lineTo(px, y);
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // --- Mark crests and troughs ---
+            for (let px = 0; px <= w; px += 3) {
+                const x = px / w;
+                const phase = omega * time - x * visibleCycles * 2 * Math.PI;
+                const sinVal = Math.sin(phase);
+                const y = midY - amplitude * sinVal;
+
+                if (sinVal > 0.995) {
+                    ctx.fillStyle = 'rgba(247, 37, 133, 0.9)';
+                    ctx.beginPath(); ctx.arc(px, y, 6, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath(); ctx.arc(px, y, 2.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'rgba(247, 37, 133, 0.7)';
+                    ctx.font = '600 10px "Inter", sans-serif';
+                    ctx.fillText('Crest', px - 14, y - 14);
+                }
+
+                if (sinVal < -0.995) {
+                    ctx.fillStyle = 'rgba(67, 97, 238, 0.9)';
+                    ctx.beginPath(); ctx.arc(px, y, 6, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath(); ctx.arc(px, y, 2.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = 'rgba(67, 97, 238, 0.7)';
+                    ctx.font = '600 10px "Inter", sans-serif';
+                    ctx.fillText('Trough', px - 18, y + 22);
+                }
+            }
+
+            // --- Moving oscillator point on left edge ---
+            const pointY = midY - amplitude * Math.sin(omega * time);
+
+            ctx.strokeStyle = 'rgba(244, 162, 97, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(0, pointY, 12, 0, Math.PI * 2); ctx.stroke();
+
+            ctx.fillStyle = '#f4a261';
+            ctx.beginPath(); ctx.arc(0, pointY, 5, 0, Math.PI * 2); ctx.fill();
+
+            ctx.strokeStyle = 'rgba(244, 162, 97, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(0, pointY); ctx.lineTo(w, pointY); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // --- Count full waves ---
+            waveCount = Math.floor(omega * time / (2 * Math.PI));
+        }
+
+        function drawParticleTrail(w, h, time) {
+            const midY = h / 2;
+            const amplitude = h * 0.35;
+            const omega = 2 * Math.PI * freqHz;
+            const visibleCycles = Math.max(2, Math.min(freqHz * 3, 8));
+            const numParticles = 30;
+
+            for (let i = 0; i < numParticles; i++) {
+                const px = (i / numParticles) * w;
+                const x = px / w;
+                const phase = omega * time - x * visibleCycles * 2 * Math.PI;
+                const sinVal = Math.sin(phase);
+                const y = midY - amplitude * sinVal;
+
+                const alpha = 0.15 + 0.15 * Math.abs(sinVal);
+                ctx.fillStyle = `rgba(255, 107, 53, ${alpha})`;
+                ctx.beginPath(); ctx.arc(px, y, 2, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+
+        // === Minute progress ===
+        function updateMinuteBar(elapsed) {
+            const secondsInMinute = 60;
+            const currentMinuteElapsed = elapsed % secondsInMinute;
+            const pct = (currentMinuteElapsed / secondsInMinute) * 100;
+
+            document.getElementById('minuteBarFill').style.width = pct + '%';
+
+            const mins = Math.floor(elapsed / 60);
+            const secs = Math.floor(elapsed % 60);
+            const secStr = secs.toString().padStart(2, '0');
+            document.getElementById('minuteTimer').textContent = `${mins}:${secStr} / ∞`;
+        }
+
+        // === Animation Loop ===
+        function animate(timestamp) {
+            if (!isRunning) return;
+
+            const w = canvas.width / (window.devicePixelRatio || 1);
+            const h = 380;
+
+            elapsedTime = (timestamp - startTime) / 1000;
+
+            ctx.clearRect(0, 0, w, h);
+            drawGrid(w, h);
+            drawAxis(w, h);
+            drawParticleTrail(w, h, elapsedTime);
+            drawWave(w, h, elapsedTime);
+
+            // Update stats
+            document.getElementById('statCount').textContent = waveCount;
+            document.getElementById('statTime').textContent = elapsedTime.toFixed(2);
+
+            // Minute bar
+            updateMinuteBar(elapsedTime);
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function drawStatic() {
+            const w = canvas.width / (window.devicePixelRatio || 1);
+            const h = 380;
+            ctx.clearRect(0, 0, w, h);
+            drawGrid(w, h);
+            drawAxis(w, h);
+            drawWave(w, h, 0);
+        }
+
+        // === Update derived values ===
+        function updateDerivedStats() {
+            freqHz = cpm / 60;
+            document.getElementById('statFreqCPM').textContent = cpm;
+            document.getElementById('statFreqHz').textContent = freqHz.toFixed(3);
+            document.getElementById('statPeriod').textContent = (60 / cpm).toFixed(3);
+            document.getElementById('expectedWaves').textContent = cpm;
+        }
+
+        // === Controls ===
+        function startAnimation() {
+            cpm = parseFloat(document.getElementById('freqInput').value) || 30;
+            if (cpm < 1) cpm = 1;
+            if (cpm > 600) cpm = 600;
+            document.getElementById('freqInput').value = cpm;
+
+            updateDerivedStats();
+
+            if (!isRunning) {
+                isRunning = true;
+                startTime = performance.now() - pausedTime * 1000;
+                document.getElementById('statusDot').classList.add('active');
+                document.getElementById('statusText').textContent = `Oscillating at ${cpm} CPM (${freqHz.toFixed(3)} Hz)`;
+                animationId = requestAnimationFrame(animate);
+            }
+        }
+
+        function stopAnimation() {
+            if (isRunning) {
+                isRunning = false;
+                pausedTime = elapsedTime;
+                cancelAnimationFrame(animationId);
+                document.getElementById('statusDot').classList.remove('active');
+                document.getElementById('statusText').textContent = `Paused at ${elapsedTime.toFixed(2)}s — ${waveCount} waves completed`;
+            }
+        }
+
+        function resetAnimation() {
+            stopAnimation();
+            elapsedTime = 0;
+            pausedTime = 0;
+            waveCount = 0;
+            document.getElementById('statCount').textContent = '0';
+            document.getElementById('statTime').textContent = '0.00';
+            document.getElementById('minuteBarFill').style.width = '0%';
+            document.getElementById('minuteTimer').textContent = '0:00 / ∞';
+            document.getElementById('statusText').textContent = 'Ready — enter CPM & press Start';
+            drawStatic();
+        }
+
+        // Live update frequency on input change
+        document.getElementById('freqInput').addEventListener('input', function () {
+            const val = parseFloat(this.value);
+            if (val >= 1 && val <= 600) {
+                cpm = val;
+                updateDerivedStats();
+                if (isRunning) {
+                    document.getElementById('statusText').textContent = `Oscillating at ${cpm} CPM (${freqHz.toFixed(3)} Hz)`;
+                }
+            }
+        });
+
+        document.getElementById('freqInput').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') startAnimation();
+        });
+
+        // Initial draw
+        updateDerivedStats();
+        drawStatic();
+    </script>
+
+</body>
+
+</html>
